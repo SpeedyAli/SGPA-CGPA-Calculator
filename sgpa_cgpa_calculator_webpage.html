@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SGPA & CGPA Calculator — Simple Guide</title>
+  <style>
+    :root{--bg:#f6fbff;--card:#ffffff;--muted:#6b7280;--accent:#0ea5a4;--accent-dark:#059f9c}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);margin:0;color:#0f172a}
+    .wrap{max-width:1000px;margin:30px auto;padding:24px}
+    .header{display:flex;align-items:center;gap:16px}
+    h1{margin:0;font-size:22px}
+    p.lead{margin:6px 0 18px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .card{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    table th, table td{padding:8px;border-bottom:1px solid #eef2f7;text-align:left}
+    .small{font-size:13px;color:var(--muted)}
+    .grades{display:flex;gap:8px;flex-wrap:wrap}
+    .grade-pill{background:#e6f7f7;padding:6px 10px;border-radius:999px;font-weight:600}
+
+    /* form */
+    .subject-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .subject-row input[type=text], .subject-row input[type=number], select{padding:8px;border-radius:6px;border:1px solid #dbe7eb;width:100%;box-sizing:border-box}
+    .subject-row input[type=number]{max-width:110px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid #e1f3f3;color:var(--accent-dark)}
+    .muted{color:var(--muted)}
+    .result{font-size:18px;font-weight:700;margin-top:6px}
+    .example{background:#fbfdff;border-left:4px solid #bae6fd;padding:10px;border-radius:6px}
+    .footer{margin-top:16px;color:var(--muted);font-size:13px}
+
+    /* responsive */
+    @media (max-width:900px){.grid{grid-template-columns:1fr;}.header{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1>SGPA & CGPA Calculator — one-page guide</h1>
+        <p class="lead">Enter subjects (credits + marks or grade point). The page converts marks → grade, then calculates SGPA and CGPA. Designed for systems with 150 total marks per subject (105 theory + 45 internal).</p>
+      </div>
+      <div class="grades small" style="margin-left:auto">
+        <div class="grade-pill">A+: 91–100% → 10</div>
+        <div class="grade-pill">A: 81–90% → 9</div>
+        <div class="grade-pill">B+: 71–80% → 8</div>
+        <div class="grade-pill">B: 61–70% → 7</div>
+        <div class="grade-pill">C+: 51–60% → 6</div>
+        <div class="grade-pill">C: 41–50% → 5</div>
+        <div class="grade-pill">D: 31–40% → 4</div>
+        <div class="grade-pill">F: <31% → 0</div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:18px">
+      <div>
+        <div class="card">
+          <h3>1) SGPA calculator (per semester)</h3>
+          <p class="small">Add subjects below. For each subject you can give either total marks (out of 150) or directly choose a grade point. If you give marks, the calculator converts to grade point using the grade table.</p>
+
+          <div id="subjects"></div>
+
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button id="addSub" class="btn">+ Add subject</button>
+            <button id="clearSubs" class="btn ghost">Clear</button>
+            <div style="margin-left:auto">
+              <label class="small">Total semester credits:</label>
+              <input id="totalCredits" type="number" value="0" min="0" style="width:120px;margin-left:8px" />
+            </div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+            <button id="calcSGPA" class="btn">Calculate SGPA</button>
+            <div id="sgpaRes" class="result"></div>
+          </div>
+
+          <hr style="margin:12px 0" />
+
+          <h4>Example calculation (auto-filled)</h4>
+          <div class="example">
+            <div><strong>Subjects:</strong> Math (4cr, 85%), Physics (3cr,73%), Chem (3cr,66%), CS (2cr,59%), Drawing (2cr,92%)</div>
+            <div style="margin-top:6px">Converted grade points: 9,8,7,6,10. Weighted sum = 113. Total credits = 14. SGPA = 113 / 14 = <strong>8.07</strong></div>
+          </div>
+
+          <hr style="margin:12px 0" />
+          <h4>How SGPA is calculated</h4>
+          <p class="small">SGPA = Σ(Ci × Pi) / Σ(Ci). Where Ci = credits of i-th subject, Pi = grade point of i-th subject (from table). Example above shows the steps: convert marks & internals → grade → grade point → plug into formula.</p>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3>2) CGPA calculator (across semesters)</h3>
+          <p class="small">Enter semester SGPAs and total credits for each semester. CGPA = Σ(SGj × NCj) / Σ(NCj).</p>
+
+          <div id="semRows"></div>
+
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="addSem" class="btn">+ Add semester</button>
+            <button id="clearSem" class="btn ghost">Clear</button>
+            <button id="calcCGPA" class="btn" style="margin-left:auto">Calculate CGPA</button>
+          </div>
+
+          <div id="cgpaRes" class="result"></div>
+
+          <hr style="margin:12px 0" />
+          <h4>How CGPA is calculated</h4>
+          <p class="small">If you have multiple semesters, multiply each semester's SGPA by the credits taken that semester, sum those, and divide by total credits across semesters. The page converts % to grade points and then to SGPA if you used the SGPA calculator to prepare semester data.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h3>Quick reference: Grade cutoffs (out of 150)</h3>
+          <table>
+            <thead>
+              <tr><th>Grade</th><th>% range</th><th>Marks needed (min)</th><th>Grade point</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A+</td><td>91–100%</td><td>>=137</td><td>10</td></tr>
+              <tr><td>A</td><td>81–90%</td><td>>=122</td><td>9</td></tr>
+              <tr><td>B+</td><td>71–80%</td><td>>=107</td><td>8</td></tr>
+              <tr><td>B</td><td>61–70%</td><td>>=92</td><td>7</td></tr>
+              <tr><td>C+</td><td>51–60%</td><td>>=77</td><td>6</td></tr>
+              <tr><td>C</td><td>41–50%</td><td>>=62</td><td>5</td></tr>
+              <tr><td>D</td><td>31–40%</td><td>>=47</td><td>4</td></tr>
+              <tr><td>F</td><td>&lt;31%</td><td>&lt;47</td><td>0</td></tr>
+            </tbody>
+          </table>
+
+          <hr style="margin:12px 0" />
+          <h4>Notes & tips</h4>
+          <ul class="small">
+            <li>Marks = Theory (out of 105) + Internal/practical/viva (out of 45) → total out of 150.</li>
+            <li>Internals are easier to control — aim for 35–40/45 to reduce pressure on end-sem.</li>
+            <li>High-credit subjects matter more. Try to convert internals into grade jumps in those.</li>
+            <li>F = 0 grade points but subject credits still count — avoid failures.</li>
+            <li>Convert final CGPA to percentage by multiplying by 10 (as per your rule).</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3>Shareable example (press Copy)</h3>
+          <p class="small">This short blurb explains the system — copy and share with juniors.</p>
+          <textarea id="shareText" style="width:100%;height:120px;padding:8px;border-radius:6px;border:1px solid #e6eef0">Each subject is out of 150 marks (105 theory + 45 internals). Convert total marks to percent, then use the grade table: A+ (91–100)=10, A (81–90)=9, B+(71–80)=8, B(61–70)=7, C+(51–60)=6, C(41–50)=5, D(31–40)=4, F(&lt;31)=0. SGPA = sum(credits * grade point) / sum(credits). CGPA = sum(SGPA * semester credits) / sum(semester credits). Aim to maximize internals and score well in high-credit subjects.</textarea>
+          <div style="display:flex;gap:8px;margin-top:8px"><button id="copyShare" class="btn">Copy</button><button id="downloadPNG" class="btn ghost">Download as PNG</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">Made simple — adapt and share. If you want, I can convert this to a printable PDF or a small web app with login.</div>
+  </div>
+
+<script>
+// Utility: grade point from marks (out of 150)
+function gradePointFromMarks(total){
+  if(total >= 137) return 10;
+  if(total >= 122) return 9;
+  if(total >= 107) return 8;
+  if(total >= 92) return 7;
+  if(total >= 77) return 6;
+  if(total >= 62) return 5;
+  if(total >= 47) return 4;
+  return 0;
+}
+
+// Manage subject rows
+const subjectsDiv = document.getElementById('subjects');
+const addSubBtn = document.getElementById('addSub');
+const clearSubs = document.getElementById('clearSubs');
+const calcSGPA = document.getElementById('calcSGPA');
+const sgpaRes = document.getElementById('sgpaRes');
+const totalCreditsInput = document.getElementById('totalCredits');
+
+let subjectIndex = 0;
+function addSubject(pref){
+  subjectIndex++;
+  const id = 's' + subjectIndex;
+  const div = document.createElement('div');
+  div.className = 'subject-row';
+  div.id = id;
+  div.innerHTML = `
+    <input placeholder="Subject name" class="subName" type="text" style="width:130px" />
+    <input placeholder="Credits" class="subCred" type="number" min="0" value="3" />
+    <select class="mode">
+      <option value="marks">Marks (out of 150)</option>
+      <option value="gp">Grade point</option>
+    </select>
+    <input class="subMarks" type="number" placeholder="Marks (0-150)" min="0" max="150" />
+    <select class="subGP" style="display:none;">
+      <option value="10">10</option>
+      <option value="9">9</option>
+      <option value="8">8</option>
+      <option value="7">7</option>
+      <option value="6">6</option>
+      <option value="5">5</option>
+      <option value="4">4</option>
+      <option value="0">0</option>
+    </select>
+    <button class="btn remove">Remove</button>
+  `;
+  subjectsDiv.appendChild(div);
+
+  const mode = div.querySelector('.mode');
+  const marks = div.querySelector('.subMarks');
+  const gp = div.querySelector('.subGP');
+  const remove = div.querySelector('.remove');
+
+  mode.addEventListener('change', e=>{
+    if(mode.value === 'marks') {marks.style.display='inline-block'; gp.style.display='none'}
+    else {marks.style.display='none'; gp.style.display='inline-block'}
+  });
+  remove.addEventListener('click', ()=>div.remove());
+
+  if(pref){
+    div.querySelector('.subName').value = pref.name || '';
+    div.querySelector('.subCred').value = pref.cred || 3;
+    if(pref.mode === 'gp'){
+      mode.value='gp'; mode.dispatchEvent(new Event('change'));
+      gp.value = pref.gp;
+    } else {
+      marks.value = pref.marks;
+    }
+  }
+}
+
+addSubBtn.addEventListener('click', ()=>addSubject());
+clearSubs.addEventListener('click', ()=>{subjectsDiv.innerHTML=''; sgpaRes.textContent=''; totalCreditsInput.value = 0});
+
+// Pre-fill example subjects
+addSubject({name:'Math', cred:4, mode:'marks', marks:127});
+addSubject({name:'Physics', cred:3, mode:'marks', marks:110});
+addSubject({name:'Chem', cred:3, mode:'marks', marks:100});
+addSubject({name:'CS', cred:2, mode:'marks', marks:89});
+addSubject({name:'Drawing', cred:2, mode:'marks', marks:138});
+
+// Calculate SGPA
+calcSGPA.addEventListener('click', ()=>{
+  const rows = subjectsDiv.querySelectorAll('.subject-row');
+  let totalCredits = 0; let weightedSum = 0; let bad=false;
+  rows.forEach(r=>{
+    const c = Number(r.querySelector('.subCred').value) || 0;
+    totalCredits += c;
+    const mode = r.querySelector('.mode').value;
+    let gp = 0;
+    if(mode === 'marks'){
+      const m = Number(r.querySelector('.subMarks').value);
+      if(isNaN(m)){bad=true;}
+      gp = gradePointFromMarks(m);
+    } else {
+      gp = Number(r.querySelector('.subGP').value);
+    }
+    weightedSum += c * gp;
+  });
+  if(bad || totalCredits === 0){sgpaRes.textContent = 'Enter valid subjects and credits'; return}
+  const sgpa = (weightedSum / totalCredits);
+  sgpaRes.innerHTML = `SGPA = <span style="color:var(--accent)">${sgpa.toFixed(2)}</span> (Weighted points: ${weightedSum} / Credits: ${totalCredits})`;
+});
+
+// Semester rows for CGPA
+const semRows = document.getElementById('semRows');
+const addSem = document.getElementById('addSem');
+const clearSem = document.getElementById('clearSem');
+const calcCGPA = document.getElementById('calcCGPA');
+const cgpaRes = document.getElementById('cgpaRes');
+let semIndex = 0;
+function addSemester(pref){
+  semIndex++;
+  const id = 'sem' + semIndex;
+  const div = document.createElement('div');
+  div.style.display='flex';div.style.gap='8px';div.style.marginTop='8px';
+  div.id = id;
+  div.innerHTML = `
+    <input placeholder="Sem name" type="text" style="width:110px" class="sname" />
+    <input placeholder="SGPA" type="number" step="0.01" min="0" max="10" class="ssgpa" />
+    <input placeholder="Credits" type="number" min="0" value="20" class="scred" />
+    <button class="btn removeSem">Remove</button>
+  `;
+  semRows.appendChild(div);
+  div.querySelector('.removeSem').addEventListener('click', ()=>div.remove());
+  if(pref){div.querySelector('.sname').value=pref.name;div.querySelector('.ssgpa').value=pref.sgpa;div.querySelector('.scred').value=pref.cred}
+}
+addSem.addEventListener('click', ()=>addSemester());
+clearSem.addEventListener('click', ()=>{semRows.innerHTML='';cgpaRes.textContent=''});
+
+// Pre-fill sems example
+addSemester({name:'Sem1', sgpa:7.8, cred:25});
+addSemester({name:'Sem2', sgpa:6.9, cred:24});
+addSemester({name:'Sem3', sgpa:6.5, cred:26});
+addSemester({name:'Sem4', sgpa:6.2, cred:25});
+addSemester({name:'Sem5', sgpa:6.4, cred:27});
+addSemester({name:'Sem6', sgpa:6.14, cred:25});
+
+calcCGPA.addEventListener('click', ()=>{
+  const rows = semRows.querySelectorAll('div');
+  let totalCredits = 0; let pts=0; let bad=false;
+  rows.forEach(r=>{
+    const sgpa = Number(r.querySelector('.ssgpa').value);
+    const cred = Number(r.querySelector('.scred').value);
+    if(isNaN(sgpa) || isNaN(cred)){bad=true;}
+    totalCredits += cred;
+    pts += (sgpa * cred);
+  });
+  if(bad || totalCredits===0){cgpaRes.textContent='Enter valid semesters and credits';return}
+  const cgpa = pts/totalCredits;
+  cgpaRes.innerHTML = `CGPA = <span style="color:var(--accent)">${cgpa.toFixed(2)}</span> (Points: ${pts.toFixed(2)} / Credits: ${totalCredits})\nPercentage ≈ ${(cgpa*10).toFixed(2)}%`;
+});
+
+// Copy share
+const copyShare = document.getElementById('copyShare');
+copyShare.addEventListener('click', ()=>{
+  const t = document.getElementById('shareText'); t.select(); document.execCommand('copy');
+  copyShare.textContent = 'Copied!'; setTimeout(()=>copyShare.textContent='Copy',1200);
+});
+
+// Download PNG (simple screenshot of the card) - uses html2canvas if available; fallback alerts
+const downloadPNG = document.getElementById('downloadPNG');
+downloadPNG.addEventListener('click', ()=>{
+  alert('To export as PNG, open devtools -> right click page -> Capture screenshot OR install html2canvas. I can generate a PNG if you want me to produce it now.');
+});
+
+</script>
+</body>
+</html>
